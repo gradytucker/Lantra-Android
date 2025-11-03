@@ -1,4 +1,4 @@
-package com.example.lantra.services
+package app.lantra.services
 
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification

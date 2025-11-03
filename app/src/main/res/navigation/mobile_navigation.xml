@@ -7,13 +7,13 @@
 
     <fragment
         android:id="@+id/navigation_speakers"
-        android:name="com.example.lantra.ui.speakers.SpeakersFragment"
+        android:name="app.lantra.ui.speakers.SpeakersFragment"
         android:label="@string/title_speakers"
         tools:layout="@layout/fragment_speakers" />
 
     <fragment
         android:id="@+id/navigation_settings"
-        android:name="com.example.lantra.ui.player.PlayerFragment"
+        android:name="app.lantra.ui.player.PlayerFragment"
         android:label="@string/title_player"
         tools:layout="@layout/fragment_player" />
 

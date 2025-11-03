@@ -1,7 +1,6 @@
-package com.example.lantra.network.discovery
+package app.lantra.network.discovery
 
 import android.util.Log
-import com.google.firebase.database.tubesock.WebSocket
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,6 +11,7 @@ import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 
+@kotlinx.serialization.Serializable
 data class SpeakerDevice(
     val application: String,
     val browser: String

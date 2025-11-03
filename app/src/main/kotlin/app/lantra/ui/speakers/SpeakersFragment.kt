@@ -1,4 +1,4 @@
-package com.example.lantra.ui.speakers
+package app.lantra.ui.speakers
 
 import android.content.Context
 import android.content.Intent
@@ -14,8 +14,8 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import com.example.lantra.databinding.FragmentSpeakersBinding
-import com.example.lantra.services.AudioCaptureService
+import app.lantra.databinding.FragmentSpeakersBinding
+import app.lantra.services.AudioCaptureService
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 

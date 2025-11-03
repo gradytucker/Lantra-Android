@@ -1,4 +1,4 @@
-package com.example.lantra
+package app.lantra
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -10,7 +10,7 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.example.lantra.databinding.ActivityMainBinding
+import app.lantra.databinding.ActivityMainBinding
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {

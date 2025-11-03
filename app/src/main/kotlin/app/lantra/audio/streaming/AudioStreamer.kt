@@ -1,4 +1,4 @@
-package com.example.lantra.audio.streaming
+package app.lantra.audio.streaming
 
 import android.Manifest
 import android.content.Context

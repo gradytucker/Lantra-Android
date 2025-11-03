@@ -1,4 +1,4 @@
-package com.example.lantra.ui.player
+package app.lantra.ui.player
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData

@@ -1,4 +1,4 @@
-package com.example.lantra.ui.speakers
+package app.lantra.ui.speakers
 
 sealed class SpeakersUiState {
     object Searching : SpeakersUiState()

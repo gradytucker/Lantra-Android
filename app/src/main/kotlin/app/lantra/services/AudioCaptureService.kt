@@ -1,4 +1,4 @@
-package com.example.lantra.services
+package app.lantra.services
 
 import android.app.Activity
 import android.app.Notification
@@ -13,7 +13,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import com.example.lantra.audio.streaming.AudioStreamer
+import app.lantra.audio.streaming.AudioStreamer
 
 
 class AudioCaptureService : Service() {
