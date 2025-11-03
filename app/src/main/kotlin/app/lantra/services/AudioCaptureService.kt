@@ -13,7 +13,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
-import app.lantra.audio.streaming.AudioStreamer
+import app.lantra.audio.AudioStreamer
 
 
 class AudioCaptureService : Service() {

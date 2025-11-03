@@ -3,7 +3,7 @@ package app.lantra.ui.speakers
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import app.lantra.network.discovery.ServerDiscovery
+import app.lantra.network.ServerDiscovery
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch

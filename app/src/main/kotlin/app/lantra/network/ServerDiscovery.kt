@@ -1,4 +1,4 @@
-package app.lantra.network.discovery
+package app.lantra.network
 
 import android.content.Context
 import android.net.nsd.NsdManager
