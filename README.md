@@ -1,4 +1,4 @@
-# Lantra - Android Audio Streaming & Speaker Discovery
+# Lantra - Android
 
 Lantra is an Android application that allows you to discover devices (“speakers”) on your local network and stream audio from your device to them in real-time. It integrates WebSocket-based device discovery and TCP-based audio streaming, making it perfect for local network audio sharing.
 
