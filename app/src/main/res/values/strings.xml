@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Lantra</string>
+    <string name="title_speakers">Speakers</string>
+    <string name="title_player">Player</string>
+</resources>
