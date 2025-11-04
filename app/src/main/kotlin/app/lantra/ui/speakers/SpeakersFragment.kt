@@ -14,8 +14,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import app.lantra.databinding.FragmentSpeakersBinding
-import app.lantra.services.AudioCaptureService
+import app.lantra.service.AudioCaptureService
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -25,6 +26,7 @@ class SpeakersFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SpeakersViewModel by activityViewModels()
+    private val speakerAdapter = SpeakerAdapter()
 
     private var discoveredHost: String? = null
     private var discoveredPort: Int? = null
@@ -61,17 +63,38 @@ class SpeakersFragment : Fragment() {
     ): View {
         _binding = FragmentSpeakersBinding.inflate(inflater, container, false)
 
-        binding.btnRetry.setOnClickListener { viewModel.discoverServer() }
-        binding.btnStart.setOnClickListener { checkMicPermissionAndStart() }
-        binding.btnStop.setOnClickListener { stopStreaming() }
-
+        setupRecyclerView()
+        setupButtons()
         observeUiState()
+        observeSpeakers()
 
         if (viewModel.uiState.value is SpeakersUiState.Searching) {
-            viewModel.discoverServer()
+            viewModel.startServerDiscovery()
         }
 
         return binding.root
+    }
+
+    // setup recycler view for speakers
+    private fun setupRecyclerView() {
+        binding.rvSpeakers.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvSpeakers.adapter = speakerAdapter
+    }
+
+    // observe speakers list
+    private fun observeSpeakers() {
+        lifecycleScope.launch {
+            viewModel.speakers.collectLatest { speakers ->
+                speakerAdapter.submitList(speakers)
+            }
+        }
+    }
+
+    // setup buttons
+    private fun setupButtons() {
+        binding.btnRetry.setOnClickListener { viewModel.startServerDiscovery() }
+        binding.btnStart.setOnClickListener { checkMicPermissionAndStart() }
+        binding.btnStop.setOnClickListener { stopStreaming() }
     }
 
     private fun observeUiState() {

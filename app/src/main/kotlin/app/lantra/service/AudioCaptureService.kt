@@ -1,4 +1,4 @@
-package app.lantra.services
+package app.lantra.service
 
 import android.app.Activity
 import android.app.Notification

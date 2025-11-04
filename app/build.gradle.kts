@@ -2,6 +2,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -51,6 +52,7 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
 
+    implementation("org.jmdns:jmdns:3.6.2")
     implementation("com.squareup.okhttp3:okhttp:4.11.0") // core client
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // optional, for logging WS traffic
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
