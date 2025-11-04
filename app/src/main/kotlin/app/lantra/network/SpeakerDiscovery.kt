@@ -1,81 +1,85 @@
 package app.lantra.network
 
 import android.util.Log
+import app.lantra.model.ServerMessage
 import app.lantra.model.SpeakerDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Socket
+import java.net.SocketException
 
 class SpeakerDiscovery(
-    private val host: String,
-    private val port: Int,
+    private val serverHost: String,
+    private val serverPort: Int,
     private val scope: CoroutineScope
 ) {
+
     private var socket: Socket? = null
     private var reader: BufferedReader? = null
+    private var job: Job? = null
 
     private val _speakers = MutableStateFlow<List<SpeakerDevice>>(emptyList())
     val speakers: StateFlow<List<SpeakerDevice>> = _speakers
 
+    private val json = Json { ignoreUnknownKeys = true }
+
+    /** Start connecting and listening for data */
     fun connect() {
-        Log.d("SpeakerDiscovery", "Attempting to connect to host=$host, port=$port")
+        if (job?.isActive == true) return // Already running
 
-        try {
-            socket = Socket().apply {
-                connect(InetSocketAddress(host, port), 5000)
-            }
-            Log.d("SpeakerDiscovery", "Connected to $host:$port")
-            reader = BufferedReader(InputStreamReader(socket!!.getInputStream()))
+        job = scope.launch(Dispatchers.IO) {
+            try {
+                Log.d("SpeakerDiscovery", "Connecting to $serverHost:$serverPort")
+                socket = Socket().apply {
+                    connect(InetSocketAddress(serverHost, serverPort), 5000)
+                }
+                reader = BufferedReader(InputStreamReader(socket!!.getInputStream()))
+                Log.d("SpeakerDiscovery", "Connected to $serverHost:$serverPort")
 
-            // Listen for incoming data
-            scope.launch(Dispatchers.IO) {
-                try {
-                    var line: String? = null
-                    while (socket?.isConnected == true && reader?.readLine()
-                            .also { line = it } != null
-                    ) {
-                        line?.let { json ->
-                            try {
-                                // Deserialize JSON to list of SpeakerDevice
-                                val list = parseSpeakerList(json)
-                                _speakers.value = list
-                            } catch (e: Exception) {
-                                Log.e(
-                                    "SpeakerDiscovery",
-                                    "Failed to parse speaker data: ${e.message}"
-                                )
+                var line: String? = null;
+                while (socket?.isConnected == true && reader?.readLine()
+                        .also { line = it } != null
+                ) {
+                    line?.let { jsonString ->
+                        try {
+                            val message =
+                                json.decodeFromString<ServerMessage>(jsonString)
+                            Log.d("SpeakerDiscovery", message.toString());
+                            when (message.type) {
+                                "device_list" -> {
+                                    _speakers.value =
+                                        json.decodeFromJsonElement<List<SpeakerDevice>>(
+                                            message.data
+                                        )
+                                }
                             }
+                        } catch (e: Exception) {
+                            Log.e("SpeakerDiscovery", "Failed to parse speaker JSON: ${e.message}")
                         }
                     }
-                } catch (e: Exception) {
-                    Log.e("SpeakerDiscovery", "Socket read error: ${e.message}")
-                } finally {
-                    close()
                 }
+            } catch (e: SocketException) {
+                Log.e("SpeakerDiscovery", "Socket exception: ${e.message}")
+            } catch (e: Exception) {
+                Log.e("SpeakerDiscovery", "Connection error: ${e.message}")
+            } finally {
+                close()
             }
-        } catch (e: Exception) {
-            Log.e("SpeakerDiscovery", "Connection error: ${e.message}")
         }
     }
 
-    private fun parseSpeakerList(json: String): List<SpeakerDevice> {
-        // Simple manual parsing for demo purposes
-        // Replace with your preferred JSON library, e.g., kotlinx.serialization or Moshi
-        return if (json.contains("devices")) {
-            // This is a placeholder — parse JSON into SpeakerDevice objects
-            emptyList()
-        } else {
-            emptyList()
-        }
-    }
-
+    /** Close socket and cancel reading job */
     fun close() {
+        job?.cancel()
         try {
             reader?.close()
             socket?.close()
