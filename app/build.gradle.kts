@@ -56,6 +56,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.11.0") // core client
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0") // optional, for logging WS traffic
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+    implementation(libs.androidx.cardview)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

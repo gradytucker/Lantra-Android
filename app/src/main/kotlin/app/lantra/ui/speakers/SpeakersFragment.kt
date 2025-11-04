@@ -14,7 +14,7 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.GridLayoutManager
 import app.lantra.databinding.FragmentSpeakersBinding
 import app.lantra.service.AudioCaptureService
 import kotlinx.coroutines.flow.collectLatest
@@ -26,7 +26,7 @@ class SpeakersFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: SpeakersViewModel by activityViewModels()
-    private val speakerAdapter = SpeakerAdapter()
+    private lateinit var speakerAdapter: SpeakerAdapter
 
     private var discoveredHost: String? = null
     private var discoveredPort: Int? = null
@@ -75,26 +75,41 @@ class SpeakersFragment : Fragment() {
         return binding.root
     }
 
-    // setup recycler view for speakers
-    private fun setupRecyclerView() {
-        binding.rvSpeakers.layoutManager = LinearLayoutManager(requireContext())
+    private fun setupRecyclerView(columns: Int = 2) {
+        speakerAdapter = SpeakerAdapter(emptyList()) { device, isCasting ->
+            device.isCasting = isCasting
+            handleGlobalCasting()
+            viewModel.toggleDeviceCasting(device, isCasting)
+        }
+
         binding.rvSpeakers.adapter = speakerAdapter
+        binding.rvSpeakers.layoutManager = GridLayoutManager(requireContext(), columns)
     }
 
-    // observe speakers list
+
     private fun observeSpeakers() {
         lifecycleScope.launch {
             viewModel.speakers.collectLatest { speakers ->
                 speakerAdapter.submitList(speakers)
+                if (viewModel.uiState.value is SpeakersUiState.Connected) {
+                    when (speakers.size) {
+                        0 -> {
+                            binding.groupNoSpeakers.visibility = View.VISIBLE
+                            binding.groupConnected.visibility = View.GONE
+                        }
+
+                        else -> {
+                            binding.groupNoSpeakers.visibility = View.GONE
+                            binding.groupConnected.visibility = View.VISIBLE
+                        }
+                    }
+                }
             }
         }
     }
 
-    // setup buttons
     private fun setupButtons() {
         binding.btnRetry.setOnClickListener { viewModel.startServerDiscovery() }
-        binding.btnStart.setOnClickListener { checkMicPermissionAndStart() }
-        binding.btnStop.setOnClickListener { stopStreaming() }
     }
 
     private fun observeUiState() {
@@ -105,21 +120,22 @@ class SpeakersFragment : Fragment() {
                         binding.groupSearching.visibility = View.VISIBLE
                         binding.groupConnected.visibility = View.GONE
                         binding.groupNoServer.visibility = View.GONE
+                        binding.groupNoSpeakers.visibility = View.GONE
                     }
 
                     is SpeakersUiState.Connected -> {
                         binding.groupConnected.visibility = View.VISIBLE
                         binding.groupNoServer.visibility = View.GONE
                         binding.groupSearching.visibility = View.GONE
-                        binding.tvStatus.text = "Found server at ${state.host}:${state.port}"
                         discoveredHost = state.host
                         discoveredPort = state.port
                     }
 
                     is SpeakersUiState.NoServer -> {
+                        binding.groupNoServer.visibility = View.VISIBLE
                         binding.groupConnected.visibility = View.GONE
                         binding.groupSearching.visibility = View.GONE
-                        binding.groupNoServer.visibility = View.VISIBLE
+                        binding.groupNoSpeakers.visibility = View.GONE
                     }
                 }
             }
@@ -144,8 +160,18 @@ class SpeakersFragment : Fragment() {
         projectionLauncher.launch(manager.createScreenCaptureIntent())
     }
 
+
     private fun stopStreaming() {
         requireContext().stopService(Intent(requireContext(), AudioCaptureService::class.java))
+    }
+
+    private fun handleGlobalCasting() {
+        val anyDeviceCasting = speakerAdapter.items.any() { it.isCasting }
+        if (anyDeviceCasting) {
+            checkMicPermissionAndStart()
+        } else {
+            stopStreaming()
+        }
     }
 
     override fun onDestroyView() {

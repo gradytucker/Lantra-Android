@@ -9,10 +9,9 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.resume
 
-class ServerDiscovery(private val context: Context) {
+class ServerDiscovery(private val context: Context, private val serviceType: String) {
 
     private val nsdManager = context.getSystemService(Context.NSD_SERVICE) as NsdManager
-    private val serviceType = "_lantra._tcp."  // trailing dot is required for Android NSD
     private var multicastLock: WifiManager.MulticastLock? = null
 
     private fun acquireMulticastLock() {
