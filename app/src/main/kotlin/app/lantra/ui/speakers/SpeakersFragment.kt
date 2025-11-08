@@ -20,6 +20,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import app.lantra.R
 import app.lantra.databinding.FragmentSpeakersBinding
+import app.lantra.model.SpeakerDevice
 import app.lantra.service.AudioCaptureService
 import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.flow.collectLatest
@@ -35,21 +36,26 @@ class SpeakersFragment : Fragment() {
 
     private var discoveredHost: String? = null
     private var discoveredPort: Int? = null
+    private var isRequestingPermission = false
+    private var pendingToggle: Pair<SpeakerDevice, Boolean>? = null
 
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
+        isRequestingPermission = false
         if (granted) {
             startProjection()
         } else {
-            Toast.makeText(requireContext(), "Microphone permission required", Toast.LENGTH_SHORT).show()
-            viewModel.revertCastingState()
+            Toast.makeText(requireContext(), "Microphone permission required", Toast.LENGTH_SHORT)
+                .show()
+            pendingToggle = null
         }
     }
 
     private val projectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
+        isRequestingPermission = false
         if (result.resultCode == android.app.Activity.RESULT_OK && result.data != null) {
             val startStreamIntent =
                 Intent(requireContext(), AudioCaptureService::class.java).apply {
@@ -59,9 +65,14 @@ class SpeakersFragment : Fragment() {
                     putExtra("server_port", discoveredPort)
                 }
             ContextCompat.startForegroundService(requireContext(), startStreamIntent)
+
+            pendingToggle?.let { (device, isCasting) ->
+                viewModel.toggleDeviceCasting(device, isCasting)
+                pendingToggle = null
+            }
         } else {
             Toast.makeText(requireContext(), "Permission denied", Toast.LENGTH_SHORT).show()
-            viewModel.revertCastingState()
+            pendingToggle = null
         }
     }
 
@@ -83,14 +94,26 @@ class SpeakersFragment : Fragment() {
         return binding.root
     }
 
+    private fun onSpeakerToggled(device: SpeakerDevice, isCasting: Boolean) {
+        val isStartingFirstStream = isCasting && !viewModel.isStreaming.value
+        if (isStartingFirstStream) {
+            pendingToggle = device to true
+            checkMicAndStart()
+        } else {
+            viewModel.toggleDeviceCasting(device, isCasting)
+        }
+    }
+
     private fun setupTitleGradient() {
         val title = binding.groupConnectedInclude.tvTitle
         title.post {
             val paint = title.paint
             val width = paint.measureText(title.text.toString())
 
-            val startColor = MaterialColors.getColor(requireContext(), R.attr.gradientStartColor, Color.BLACK)
-            val endColor = MaterialColors.getColor(requireContext(), R.attr.gradientEndColor, Color.BLACK)
+            val startColor =
+                MaterialColors.getColor(requireContext(), R.attr.gradientStartColor, Color.BLACK)
+            val endColor =
+                MaterialColors.getColor(requireContext(), R.attr.gradientEndColor, Color.BLACK)
 
             val textShader: Shader = LinearGradient(
                 0f, 0f, width, title.textSize,
@@ -104,7 +127,7 @@ class SpeakersFragment : Fragment() {
 
     private fun setupRecyclerView(columns: Int = 2) {
         speakerAdapter = SpeakerAdapter { device, isCasting ->
-            viewModel.toggleDeviceCasting(device, isCasting)
+            onSpeakerToggled(device, isCasting)
         }
 
         binding.groupConnectedInclude.rvSpeakers.apply {
@@ -129,7 +152,7 @@ class SpeakersFragment : Fragment() {
 
                 val anyCasting = speakers.any { it.isCasting }
                 val isStreaming = viewModel.isStreaming.value
-                if (anyCasting && !isStreaming) {
+                if (anyCasting && !isStreaming && pendingToggle == null) {
                     checkMicAndStart()
                 } else if (!anyCasting && isStreaming) {
                     stopStreaming()
@@ -143,7 +166,11 @@ class SpeakersFragment : Fragment() {
         val icon = binding.groupConnectedInclude.ivSubtitleIcon
 
         if (castingCount > 0) {
-            subtitle.text = resources.getQuantityString(R.plurals.casting_to_n_speakers, castingCount, castingCount)
+            subtitle.text = resources.getQuantityString(
+                R.plurals.casting_to_n_speakers,
+                castingCount,
+                castingCount
+            )
             icon.setImageResource(R.drawable.ic_casting_24dp)
         } else {
             subtitle.text = getString(R.string.all_quiet)
@@ -152,6 +179,8 @@ class SpeakersFragment : Fragment() {
     }
 
     private fun checkMicAndStart() {
+        if (isRequestingPermission) return
+        isRequestingPermission = true
         if (ContextCompat.checkSelfPermission(
                 requireContext(),
                 android.Manifest.permission.RECORD_AUDIO
