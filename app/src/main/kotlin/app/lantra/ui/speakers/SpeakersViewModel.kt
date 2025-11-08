@@ -23,11 +23,8 @@ class SpeakersViewModel(application: Application) : AndroidViewModel(application
     val speakers: StateFlow<List<SpeakerDevice>> = _speakers
 
     private val context = getApplication<Application>()
-
     private var castControlClient: CastControlClient? = null
 
-
-    // Server discovery
     fun startServerDiscovery() {
         viewModelScope.launch {
             _uiState.value = SpeakersUiState.Searching
@@ -43,7 +40,6 @@ class SpeakersViewModel(application: Application) : AndroidViewModel(application
             } else {
                 _uiState.value = SpeakersUiState.NoServer
             }
-
         }
     }
 
@@ -54,19 +50,34 @@ class SpeakersViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             castControlClient?.speakers?.collect { devices ->
-                _speakers.value = devices
+                val merged = devices.map { newDevice ->
+                    val existing = _speakers.value.find { it.id == newDevice.id }
+                    if (existing != null) newDevice.copy(isCasting = existing.isCasting)
+                    else newDevice
+                }
+                // Only emit if merged is different
+                if (merged != _speakers.value) _speakers.value = merged
             }
         }
     }
 
     fun toggleDeviceCasting(device: SpeakerDevice, enabled: Boolean) {
-        device.isCasting = enabled
-        val toggle = SpeakerCastToggle(device.id, enabled)
-        val controlMessage = ServerMessage(
-            type = "toggle_cast",
-            data = Json.encodeToJsonElement(toggle)
-        )
-        castControlClient?.sendMessage(controlMessage)
+        val current = _speakers.value
+        val updated = current.map {
+            if (it.id == device.id && it.isCasting != enabled) it.copy(isCasting = enabled) else it
+        }
+
+        // Only update if something changed
+        if (updated != current) {
+            _speakers.value = updated
+
+            val toggle = SpeakerCastToggle(device.id, enabled)
+            val controlMessage = ServerMessage(
+                type = "toggle_cast",
+                data = Json.encodeToJsonElement(toggle)
+            )
+            castControlClient?.sendMessage(controlMessage)
+        }
     }
 
     override fun onCleared() {

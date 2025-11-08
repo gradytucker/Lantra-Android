@@ -2,7 +2,6 @@ package app.lantra.ui.speakers
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -30,14 +29,6 @@ class SpeakersFragment : Fragment() {
 
     private var discoveredHost: String? = null
     private var discoveredPort: Int? = null
-
-    private val micPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) startCastingFlow()
-        else Toast.makeText(requireContext(), "Microphone permission required", Toast.LENGTH_SHORT)
-            .show()
-    }
 
     private val projectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -68,42 +59,37 @@ class SpeakersFragment : Fragment() {
         observeUiState()
         observeSpeakers()
 
-        if (viewModel.uiState.value is SpeakersUiState.Searching) {
-            viewModel.startServerDiscovery()
-        }
+        if (viewModel.uiState.value is SpeakersUiState.Searching) viewModel.startServerDiscovery()
 
         return binding.root
     }
 
     private fun setupRecyclerView(columns: Int = 2) {
-        speakerAdapter = SpeakerAdapter(emptyList()) { device, isCasting ->
-            device.isCasting = isCasting
-            handleGlobalCasting()
+        speakerAdapter = SpeakerAdapter { device, isCasting ->
             viewModel.toggleDeviceCasting(device, isCasting)
         }
 
-        binding.rvSpeakers.adapter = speakerAdapter
-        binding.rvSpeakers.layoutManager = GridLayoutManager(requireContext(), columns)
+        binding.rvSpeakers.apply {
+            adapter = speakerAdapter
+            layoutManager = GridLayoutManager(requireContext(), columns)
+        }
     }
-
 
     private fun observeSpeakers() {
         lifecycleScope.launch {
             viewModel.speakers.collectLatest { speakers ->
-                speakerAdapter.submitList(speakers)
-                if (viewModel.uiState.value is SpeakersUiState.Connected) {
-                    when (speakers.size) {
-                        0 -> {
-                            binding.groupNoSpeakers.visibility = View.VISIBLE
-                            binding.groupConnected.visibility = View.GONE
-                        }
+                speakerAdapter.submitList(speakers.map { it.copy() })
 
-                        else -> {
-                            binding.groupNoSpeakers.visibility = View.GONE
-                            binding.groupConnected.visibility = View.VISIBLE
-                        }
-                    }
-                }
+                binding.groupNoSpeakers.visibility =
+                    if (speakers.isEmpty()) View.VISIBLE else View.GONE
+                binding.groupConnected.visibility =
+                    if (speakers.isNotEmpty()) View.VISIBLE else View.GONE
+            }
+        }
+
+        lifecycleScope.launch {
+            speakerAdapter.anyCasting.collectLatest { anyCasting ->
+                if (anyCasting) startCastingFlow() else stopStreaming()
             }
         }
     }
@@ -142,36 +128,14 @@ class SpeakersFragment : Fragment() {
         }
     }
 
-    private fun checkMicPermissionAndStart() {
-        if (ContextCompat.checkSelfPermission(
-                requireContext(),
-                android.Manifest.permission.RECORD_AUDIO
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-        } else {
-            startCastingFlow()
-        }
-    }
-
     private fun startCastingFlow() {
         val manager =
             requireContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
         projectionLauncher.launch(manager.createScreenCaptureIntent())
     }
 
-
     private fun stopStreaming() {
         requireContext().stopService(Intent(requireContext(), AudioCaptureService::class.java))
-    }
-
-    private fun handleGlobalCasting() {
-        val anyDeviceCasting = speakerAdapter.items.any() { it.isCasting }
-        if (anyDeviceCasting) {
-            checkMicPermissionAndStart()
-        } else {
-            stopStreaming()
-        }
     }
 
     override fun onDestroyView() {
