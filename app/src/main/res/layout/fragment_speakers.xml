@@ -3,111 +3,50 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/rootLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="16dp">
+    android:layout_height="match_parent">
 
-    <!-- Connected / ready-to-stream group -->
-    <LinearLayout
-        android:id="@+id/groupConnected"
+    <include
+        android:id="@+id/group_connected_include"
+        layout="@layout/layout_connected"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- RecyclerView for discovered speakers -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvSpeakers"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginTop="16dp"
-            android:layout_weight="1"
-            android:clipToPadding="false"
-            android:scrollbars="vertical" />
-
-    </LinearLayout>
-
-    <!-- Connected / no speakers found group -->
-    <LinearLayout
-        android:id="@+id/groupNoSpeakers"
+    <include
+        android:id="@+id/group_no_speakers_include"
+        layout="@layout/layout_no_speakers"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/tvNoSpeakersMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingBottom="24dp"
-            android:text="No Speakers found"
-            android:textSize="18sp" />
-
-    </LinearLayout>
-
-    <!-- No server found group -->
-    <LinearLayout
-        android:id="@+id/groupNoServer"
+    <include
+        android:id="@+id/group_no_server_include"
+        layout="@layout/layout_no_server"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
+        android:layout_height="0dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
 
-        <TextView
-            android:id="@+id/tvNoServerMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingBottom="24dp"
-            android:text="Cannot find Lantra server"
-            android:textSize="18sp" />
-
-        <Button
-            android:id="@+id/btnRetry"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Retry" />
-    </LinearLayout>
-
-    <!-- Searching for Server group -->
-    <LinearLayout
-        android:id="@+id/groupSearching"
+    <include
+        android:id="@+id/group_searching_include"
+        layout="@layout/layout_searching"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:orientation="vertical"
+        android:layout_height="0dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-
-        <TextView
-            android:id="@+id/tvNoSearchingMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingBottom="24dp"
-            android:text="Connecting to Lantra server..."
-            android:textSize="18sp" />
-
-        <ProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp" />
-
-    </LinearLayout>
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

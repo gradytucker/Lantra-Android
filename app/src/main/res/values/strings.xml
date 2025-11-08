@@ -2,4 +2,11 @@
     <string name="app_name">Lantra</string>
     <string name="title_speakers">Speakers</string>
     <string name="title_player">Player</string>
+
+    <!-- Speakers Header -->
+    <string name="all_quiet">All quiet</string>
+    <plurals name="casting_to_n_speakers">
+        <item quantity="one">Casting to %d speaker</item>
+        <item quantity="other">Casting to %d speakers</item>
+    </plurals>
 </resources>

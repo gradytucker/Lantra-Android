@@ -3,6 +3,9 @@ package app.lantra.ui.speakers
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.LinearGradient
+import android.graphics.Shader
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -15,8 +18,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
+import app.lantra.R
 import app.lantra.databinding.FragmentSpeakersBinding
 import app.lantra.service.AudioCaptureService
+import com.google.android.material.color.MaterialColors
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -31,17 +36,14 @@ class SpeakersFragment : Fragment() {
     private var discoveredHost: String? = null
     private var discoveredPort: Int? = null
 
-    private var isStreaming = false // tracks if audio capture is active
-
     private val micPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
             startProjection()
         } else {
-            Toast.makeText(requireContext(), "Microphone permission required", Toast.LENGTH_SHORT)
-                .show()
-            isStreaming = false
+            Toast.makeText(requireContext(), "Microphone permission required", Toast.LENGTH_SHORT).show()
+            viewModel.revertCastingState()
         }
     }
 
@@ -59,7 +61,7 @@ class SpeakersFragment : Fragment() {
             ContextCompat.startForegroundService(requireContext(), startStreamIntent)
         } else {
             Toast.makeText(requireContext(), "Permission denied", Toast.LENGTH_SHORT).show()
-            isStreaming = false
+            viewModel.revertCastingState()
         }
     }
 
@@ -74,10 +76,30 @@ class SpeakersFragment : Fragment() {
         setupButtons()
         observeUiState()
         observeSpeakers()
+        setupTitleGradient()
 
         if (viewModel.uiState.value is SpeakersUiState.Searching) viewModel.startServerDiscovery()
 
         return binding.root
+    }
+
+    private fun setupTitleGradient() {
+        val title = binding.groupConnectedInclude.tvTitle
+        title.post {
+            val paint = title.paint
+            val width = paint.measureText(title.text.toString())
+
+            val startColor = MaterialColors.getColor(requireContext(), R.attr.gradientStartColor, Color.BLACK)
+            val endColor = MaterialColors.getColor(requireContext(), R.attr.gradientEndColor, Color.BLACK)
+
+            val textShader: Shader = LinearGradient(
+                0f, 0f, width, title.textSize,
+                intArrayOf(startColor, endColor),
+                null, Shader.TileMode.CLAMP
+            )
+            title.paint.shader = textShader
+            title.invalidate()
+        }
     }
 
     private fun setupRecyclerView(columns: Int = 2) {
@@ -85,36 +107,47 @@ class SpeakersFragment : Fragment() {
             viewModel.toggleDeviceCasting(device, isCasting)
         }
 
-        binding.rvSpeakers.apply {
+        binding.groupConnectedInclude.rvSpeakers.apply {
             adapter = speakerAdapter
             layoutManager = GridLayoutManager(requireContext(), columns)
         }
     }
 
     private fun observeSpeakers() {
-        // update list
         lifecycleScope.launch {
             viewModel.speakers.collectLatest { speakers ->
-                speakerAdapter.submitList(speakers.map { it.copy() })
+                speakerAdapter.submitList(speakers)
 
-                binding.groupNoSpeakers.visibility =
-                    if (speakers.isEmpty()) View.VISIBLE else View.GONE
-                binding.groupConnected.visibility =
-                    if (speakers.isNotEmpty()) View.VISIBLE else View.GONE
-            }
-        }
+                updateHeader(speakers.count { it.isCasting })
 
-        // handle streaming based on anyCasting
-        lifecycleScope.launch {
-            speakerAdapter.anyCasting.collectLatest { anyCasting ->
+                if (viewModel.uiState.value is SpeakersUiState.Connected) {
+                    binding.groupNoSpeakersInclude.root.visibility =
+                        if (speakers.isEmpty()) View.VISIBLE else View.GONE
+                    binding.groupConnectedInclude.root.visibility =
+                        if (speakers.isNotEmpty()) View.VISIBLE else View.GONE
+                }
+
+                val anyCasting = speakers.any { it.isCasting }
+                val isStreaming = viewModel.isStreaming.value
                 if (anyCasting && !isStreaming) {
-                    isStreaming = true
                     checkMicAndStart()
                 } else if (!anyCasting && isStreaming) {
-                    isStreaming = false
                     stopStreaming()
                 }
             }
+        }
+    }
+
+    private fun updateHeader(castingCount: Int) {
+        val subtitle = binding.groupConnectedInclude.tvSubtitle
+        val icon = binding.groupConnectedInclude.ivSubtitleIcon
+
+        if (castingCount > 0) {
+            subtitle.text = resources.getQuantityString(R.plurals.casting_to_n_speakers, castingCount, castingCount)
+            icon.setImageResource(R.drawable.ic_casting_24dp)
+        } else {
+            subtitle.text = getString(R.string.all_quiet)
+            icon.setImageResource(R.drawable.ic_all_quiet_24dp)
         }
     }
 
@@ -141,33 +174,34 @@ class SpeakersFragment : Fragment() {
     }
 
     private fun setupButtons() {
-        binding.btnRetry.setOnClickListener { viewModel.startServerDiscovery() }
+        binding.groupNoServerInclude.btnRetry.setOnClickListener { viewModel.startServerDiscovery() }
     }
 
     private fun observeUiState() {
         lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
+                binding.groupSearchingInclude.root.visibility = View.GONE
+                binding.groupConnectedInclude.root.visibility = View.GONE
+                binding.groupNoServerInclude.root.visibility = View.GONE
+                binding.groupNoSpeakersInclude.root.visibility = View.GONE
+
                 when (state) {
                     is SpeakersUiState.Searching -> {
-                        binding.groupSearching.visibility = View.VISIBLE
-                        binding.groupConnected.visibility = View.GONE
-                        binding.groupNoServer.visibility = View.GONE
-                        binding.groupNoSpeakers.visibility = View.GONE
+                        binding.groupSearchingInclude.root.visibility = View.VISIBLE
                     }
 
                     is SpeakersUiState.Connected -> {
-                        binding.groupConnected.visibility = View.VISIBLE
-                        binding.groupNoServer.visibility = View.GONE
-                        binding.groupSearching.visibility = View.GONE
+                        if (speakerAdapter.itemCount == 0) {
+                            binding.groupNoSpeakersInclude.root.visibility = View.VISIBLE
+                        } else {
+                            binding.groupConnectedInclude.root.visibility = View.VISIBLE
+                        }
                         discoveredHost = state.host
                         discoveredPort = state.port
                     }
 
                     is SpeakersUiState.NoServer -> {
-                        binding.groupNoServer.visibility = View.VISIBLE
-                        binding.groupConnected.visibility = View.GONE
-                        binding.groupSearching.visibility = View.GONE
-                        binding.groupNoSpeakers.visibility = View.GONE
+                        binding.groupNoServerInclude.root.visibility = View.VISIBLE
                     }
                 }
             }

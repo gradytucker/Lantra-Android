@@ -1,39 +1,77 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_view"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     app:cardCornerRadius="8dp"
     app:cardElevation="4dp">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:orientation="vertical"
         android:padding="16dp">
+
+        <View
+            android:id="@+id/icon_background"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <ImageView
+            android:id="@+id/iv_volume_icon"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:contentDescription="speaker icon"
+            app:layout_constraintBottom_toBottomOf="@+id/icon_background"
+            app:layout_constraintEnd_toEndOf="@+id/icon_background"
+            app:layout_constraintStart_toStartOf="@+id/icon_background"
+            app:layout_constraintTop_toTopOf="@+id/icon_background"
+            tools:src="@drawable/ic_volume_off_lavender_24dp" />
 
         <TextView
             android:id="@+id/tvAppName"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textStyle="bold" />
+            android:layout_marginTop="16dp"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/icon_background"
+            tools:text="Spotify" />
 
         <TextView
             android:id="@+id/tvBrowser"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textSize="14sp" />
+            android:textSize="16sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvAppName"
+            tools:text="Chrome" />
 
         <ToggleButton
             android:id="@+id/toggleCasting"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textOff="Cast"
-            android:textOn="Stop" />
-    </LinearLayout>
+            android:layout_marginTop="16dp"
+            android:background="@drawable/button_background_selector"
+            android:drawableStart="@drawable/button_icon_selector"
+            android:drawablePadding="8dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:textAllCaps="false"
+            android:textColor="@color/button_text_color_selector"
+            android:textOff="Start Casting"
+            android:textOn="Stop Casting"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/tvBrowser" />
+
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>

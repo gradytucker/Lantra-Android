@@ -14,7 +14,8 @@ import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import app.lantra.audio.AudioStreamer
-
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class AudioCaptureService : Service() {
 
@@ -25,6 +26,9 @@ class AudioCaptureService : Service() {
         const val EXTRA_DATA = "data"
         const val EXTRA_SERVER_HOST = "server_host"
         const val EXTRA_SERVER_PORT = "server_port"
+
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning = _isRunning.asStateFlow()
     }
 
     private var streamer: AudioStreamer? = null
@@ -32,16 +36,15 @@ class AudioCaptureService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        _isRunning.value = true
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Extract projection permission data
         val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
             ?: return START_NOT_STICKY
         val data = intent.getParcelableExtra<Intent>(EXTRA_DATA)
             ?: return START_NOT_STICKY
 
-        // Extract server connection details
         val host = intent.getStringExtra(EXTRA_SERVER_HOST)
         val port = intent.getIntExtra(EXTRA_SERVER_PORT, -1)
 
@@ -51,9 +54,6 @@ class AudioCaptureService : Service() {
             return START_NOT_STICKY
         }
 
-        Log.d("AudioCaptureService", "Connecting to server $host:$port")
-
-        // Required on Android 14+ for media projection foreground services
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -79,12 +79,12 @@ class AudioCaptureService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         streamer?.stop()
+        _isRunning.value = false
         Log.d("AudioCaptureService", "Service destroyed, streaming stopped.")
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // --- Notification setup ---
     private fun createNotification(host: String, port: Int): Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Audio Streaming Active")
