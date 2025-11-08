@@ -2,6 +2,7 @@ package app.lantra.ui.speakers
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -30,6 +31,20 @@ class SpeakersFragment : Fragment() {
     private var discoveredHost: String? = null
     private var discoveredPort: Int? = null
 
+    private var isStreaming = false // tracks if audio capture is active
+
+    private val micPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            startProjection()
+        } else {
+            Toast.makeText(requireContext(), "Microphone permission required", Toast.LENGTH_SHORT)
+                .show()
+            isStreaming = false
+        }
+    }
+
     private val projectionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -44,6 +59,7 @@ class SpeakersFragment : Fragment() {
             ContextCompat.startForegroundService(requireContext(), startStreamIntent)
         } else {
             Toast.makeText(requireContext(), "Permission denied", Toast.LENGTH_SHORT).show()
+            isStreaming = false
         }
     }
 
@@ -76,6 +92,7 @@ class SpeakersFragment : Fragment() {
     }
 
     private fun observeSpeakers() {
+        // update list
         lifecycleScope.launch {
             viewModel.speakers.collectLatest { speakers ->
                 speakerAdapter.submitList(speakers.map { it.copy() })
@@ -87,11 +104,40 @@ class SpeakersFragment : Fragment() {
             }
         }
 
+        // handle streaming based on anyCasting
         lifecycleScope.launch {
             speakerAdapter.anyCasting.collectLatest { anyCasting ->
-                if (anyCasting) startCastingFlow() else stopStreaming()
+                if (anyCasting && !isStreaming) {
+                    isStreaming = true
+                    checkMicAndStart()
+                } else if (!anyCasting && isStreaming) {
+                    isStreaming = false
+                    stopStreaming()
+                }
             }
         }
+    }
+
+    private fun checkMicAndStart() {
+        if (ContextCompat.checkSelfPermission(
+                requireContext(),
+                android.Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            startProjection()
+        } else {
+            micPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+        }
+    }
+
+    private fun startProjection() {
+        val manager =
+            requireContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        projectionLauncher.launch(manager.createScreenCaptureIntent())
+    }
+
+    private fun stopStreaming() {
+        requireContext().stopService(Intent(requireContext(), AudioCaptureService::class.java))
     }
 
     private fun setupButtons() {
@@ -126,16 +172,6 @@ class SpeakersFragment : Fragment() {
                 }
             }
         }
-    }
-
-    private fun startCastingFlow() {
-        val manager =
-            requireContext().getSystemService(Context.MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        projectionLauncher.launch(manager.createScreenCaptureIntent())
-    }
-
-    private fun stopStreaming() {
-        requireContext().stopService(Intent(requireContext(), AudioCaptureService::class.java))
     }
 
     override fun onDestroyView() {
