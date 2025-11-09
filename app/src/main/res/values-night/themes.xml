@@ -14,7 +14,7 @@
 
         <!-- Custom Dark Mode Palette -->
         <item name="android:windowBackground">@color/dark_background</item>
-        <item name="colorSurface">@color/dark_surface</item>
+        <item name="colorSurface">@color/card_surface</item>
 
         <!-- Gradient Text Colors -->
         <item name="gradientStartColor">@color/cream</item>

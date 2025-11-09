@@ -11,7 +11,7 @@
 
     <!-- Dark Mode Palette -->
     <color name="dark_background">#1e1e2e</color>
-    <color name="dark_surface">#313244</color>
+    <color name="card_surface">#E5E7F1</color>
 
     <!-- Icon Palette -->
     <color name="lavender">#b4befe</color>

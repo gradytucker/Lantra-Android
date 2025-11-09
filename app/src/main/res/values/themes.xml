@@ -11,6 +11,7 @@
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color. -->
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:enforceStatusBarContrast">true</item>
 
         <!-- Gradient Text Colors -->
         <item name="gradientStartColor">@color/light_mode_purple</item>

@@ -24,19 +24,16 @@ class SpeakerAdapter(
 
             // Update the card's appearance based on the casting state
             if (device.isCasting) {
-                // Card background and text color
+                // use background drawable for casting state
                 binding.cardView.setBackgroundResource(R.drawable.bg_button_gradient)
                 binding.tvAppName.setTextColor(Color.WHITE)
                 binding.tvBrowser.setTextColor(Color.WHITE)
 
-                // Icon and icon background
                 binding.iconBackground.setBackgroundResource(R.drawable.bg_icon_casting)
-                binding.ivVolumeIcon.setImageResource(R.drawable.ic_volume_up_white_24dp)
+                binding.ivVolumeIcon.setImageResource(R.drawable.ic_speaker_white_24dp)
             } else {
-                // Card background and text color (theme aware)
-                binding.cardView.setCardBackgroundColor(
-                    MaterialColors.getColor(context, com.google.android.material.R.attr.colorSurface, Color.WHITE)
-                )
+                // use background drawable for non-casting state (UNIFIED API)
+                binding.cardView.setBackgroundResource(R.drawable.bg_button_normal)
                 binding.tvAppName.setTextColor(
                     MaterialColors.getColor(context, android.R.attr.textColorPrimary, Color.BLACK)
                 )
@@ -44,9 +41,8 @@ class SpeakerAdapter(
                     MaterialColors.getColor(context, android.R.attr.textColorSecondary, Color.GRAY)
                 )
 
-                // Icon and icon background
                 binding.iconBackground.setBackgroundResource(R.drawable.bg_icon_default)
-                binding.ivVolumeIcon.setImageResource(R.drawable.ic_volume_off_lavender_24dp)
+                binding.ivVolumeIcon.setImageResource(R.drawable.ic_speaker_lavender_24dp)
             }
 
             // Prevent old listener from firing during binding to avoid loops

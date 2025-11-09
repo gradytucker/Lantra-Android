@@ -68,8 +68,9 @@ class SpeakersViewModel(application: Application) : AndroidViewModel(application
     fun toggleDeviceCasting(device: SpeakerDevice, isCasting: Boolean) {
         _previousSpeakersState = _speakers.value.map { it.copy() }
 
-        val newList = _speakers.value.map {
-            if (it.id == device.id) it.copy(isCasting = isCasting) else it
+        val newList = _speakers.value.map { item ->
+            if (item.id == device.id) item.copy(isCasting = isCasting)
+            else item.copy() // create a fresh instance for identity/diff correctness
         }
 
         if (newList != _speakers.value) {

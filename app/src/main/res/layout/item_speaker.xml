@@ -30,7 +30,7 @@
             app:layout_constraintEnd_toEndOf="@+id/icon_background"
             app:layout_constraintStart_toStartOf="@+id/icon_background"
             app:layout_constraintTop_toTopOf="@+id/icon_background"
-            tools:src="@drawable/ic_volume_off_lavender_24dp" />
+            tools:src="@drawable/ic_speaker_lavender_24dp" />
 
         <TextView
             android:id="@+id/tvAppName"
