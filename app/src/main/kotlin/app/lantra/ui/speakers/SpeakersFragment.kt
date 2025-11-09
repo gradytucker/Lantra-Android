@@ -141,18 +141,7 @@ class SpeakersFragment : Fragment() {
                 speakerAdapter.submitList(speakers)
 
                 if (viewModel.uiState.value is SpeakersUiState.Connected) {
-                    val noSpeakers = speakers.isEmpty()
-                    updateHeader(speakers.count { it.isCasting }, noSpeakers)
-
-                    if (noSpeakers) {
-                        binding.groupNoSpeakersInclude.root.visibility = View.VISIBLE
-                        binding.groupConnectedInclude.root.visibility = View.GONE
-                        setupTitleGradient(binding.groupNoSpeakersInclude.tvTitle)
-                    } else {
-                        binding.groupNoSpeakersInclude.root.visibility = View.GONE
-                        binding.groupConnectedInclude.root.visibility = View.VISIBLE
-                        setupTitleGradient(binding.groupConnectedInclude.tvTitle)
-                    }
+                    showConnectedState(speakers)
                 }
 
                 val anyCasting = speakers.any { it.isCasting }
@@ -183,6 +172,21 @@ class SpeakersFragment : Fragment() {
         } else {
             subtitleView.text = getString(R.string.all_quiet)
             iconView.setImageResource(R.drawable.ic_all_quiet_24dp)
+        }
+    }
+
+    private fun showConnectedState(speakers: List<SpeakerDevice>) {
+        val noSpeakers = speakers.isEmpty()
+        updateHeader(speakers.count { it.isCasting }, noSpeakers)
+
+        if (noSpeakers) {
+            binding.groupNoSpeakersInclude.root.visibility = View.VISIBLE
+            binding.groupConnectedInclude.root.visibility = View.GONE
+            setupTitleGradient(binding.groupNoSpeakersInclude.tvTitle)
+        } else {
+            binding.groupNoSpeakersInclude.root.visibility = View.GONE
+            binding.groupConnectedInclude.root.visibility = View.VISIBLE
+            setupTitleGradient(binding.groupConnectedInclude.tvTitle)
         }
     }
 
@@ -219,18 +223,23 @@ class SpeakersFragment : Fragment() {
             viewModel.uiState.collectLatest { state ->
                 binding.groupSearchingInclude.root.visibility = View.GONE
                 binding.groupNoServerInclude.root.visibility = View.GONE
+                binding.groupConnectedInclude.root.visibility = View.GONE
+                binding.groupNoSpeakersInclude.root.visibility = View.GONE
 
-                if (state is SpeakersUiState.Searching) {
-                    binding.groupSearchingInclude.root.visibility = View.VISIBLE
-                    binding.groupConnectedInclude.root.visibility = View.GONE
-                    binding.groupNoSpeakersInclude.root.visibility = View.GONE
-                } else if (state is SpeakersUiState.NoServer) {
-                    binding.groupNoServerInclude.root.visibility = View.VISIBLE
-                    binding.groupConnectedInclude.root.visibility = View.GONE
-                    binding.groupNoSpeakersInclude.root.visibility = View.GONE
-                } else if (state is SpeakersUiState.Connected) {
-                    discoveredHost = state.host
-                    discoveredPort = state.port
+                when (state) {
+                    is SpeakersUiState.Searching -> {
+                        binding.groupSearchingInclude.root.visibility = View.VISIBLE
+                    }
+
+                    is SpeakersUiState.NoServer -> {
+                        binding.groupNoServerInclude.root.visibility = View.VISIBLE
+                    }
+
+                    is SpeakersUiState.Connected -> {
+                        discoveredHost = state.host
+                        discoveredPort = state.port
+                        showConnectedState(viewModel.speakers.value)
+                    }
                 }
             }
         }
