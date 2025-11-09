@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -87,7 +88,6 @@ class SpeakersFragment : Fragment() {
         setupButtons()
         observeUiState()
         observeSpeakers()
-        setupTitleGradient()
 
         if (viewModel.uiState.value is SpeakersUiState.Searching) viewModel.startServerDiscovery()
 
@@ -104,8 +104,7 @@ class SpeakersFragment : Fragment() {
         }
     }
 
-    private fun setupTitleGradient() {
-        val title = binding.groupConnectedInclude.tvTitle
+    private fun setupTitleGradient(title: TextView) {
         title.post {
             val paint = title.paint
             val width = paint.measureText(title.text.toString())
@@ -141,13 +140,19 @@ class SpeakersFragment : Fragment() {
             viewModel.speakers.collectLatest { speakers ->
                 speakerAdapter.submitList(speakers)
 
-                updateHeader(speakers.count { it.isCasting })
-
                 if (viewModel.uiState.value is SpeakersUiState.Connected) {
-                    binding.groupNoSpeakersInclude.root.visibility =
-                        if (speakers.isEmpty()) View.VISIBLE else View.GONE
-                    binding.groupConnectedInclude.root.visibility =
-                        if (speakers.isNotEmpty()) View.VISIBLE else View.GONE
+                    val noSpeakers = speakers.isEmpty()
+                    updateHeader(speakers.count { it.isCasting }, noSpeakers)
+
+                    if (noSpeakers) {
+                        binding.groupNoSpeakersInclude.root.visibility = View.VISIBLE
+                        binding.groupConnectedInclude.root.visibility = View.GONE
+                        setupTitleGradient(binding.groupNoSpeakersInclude.tvTitle)
+                    } else {
+                        binding.groupNoSpeakersInclude.root.visibility = View.GONE
+                        binding.groupConnectedInclude.root.visibility = View.VISIBLE
+                        setupTitleGradient(binding.groupConnectedInclude.tvTitle)
+                    }
                 }
 
                 val anyCasting = speakers.any { it.isCasting }
@@ -161,20 +166,23 @@ class SpeakersFragment : Fragment() {
         }
     }
 
-    private fun updateHeader(castingCount: Int) {
-        val subtitle = binding.groupConnectedInclude.tvSubtitle
-        val icon = binding.groupConnectedInclude.ivSubtitleIcon
+    private fun updateHeader(castingCount: Int, noSpeakers: Boolean) {
+        val (subtitleView, iconView) = if (noSpeakers) {
+            binding.groupNoSpeakersInclude.tvSubtitle to binding.groupNoSpeakersInclude.ivSubtitleIcon
+        } else {
+            binding.groupConnectedInclude.tvSubtitle to binding.groupConnectedInclude.ivSubtitleIcon
+        }
 
         if (castingCount > 0) {
-            subtitle.text = resources.getQuantityString(
+            subtitleView.text = resources.getQuantityString(
                 R.plurals.casting_to_n_speakers,
                 castingCount,
                 castingCount
             )
-            icon.setImageResource(R.drawable.ic_casting_24dp)
+            iconView.setImageResource(R.drawable.ic_casting_24dp)
         } else {
-            subtitle.text = getString(R.string.all_quiet)
-            icon.setImageResource(R.drawable.ic_all_quiet_24dp)
+            subtitleView.text = getString(R.string.all_quiet)
+            iconView.setImageResource(R.drawable.ic_all_quiet_24dp)
         }
     }
 
@@ -210,28 +218,19 @@ class SpeakersFragment : Fragment() {
         lifecycleScope.launch {
             viewModel.uiState.collectLatest { state ->
                 binding.groupSearchingInclude.root.visibility = View.GONE
-                binding.groupConnectedInclude.root.visibility = View.GONE
                 binding.groupNoServerInclude.root.visibility = View.GONE
-                binding.groupNoSpeakersInclude.root.visibility = View.GONE
 
-                when (state) {
-                    is SpeakersUiState.Searching -> {
-                        binding.groupSearchingInclude.root.visibility = View.VISIBLE
-                    }
-
-                    is SpeakersUiState.Connected -> {
-                        if (speakerAdapter.itemCount == 0) {
-                            binding.groupNoSpeakersInclude.root.visibility = View.VISIBLE
-                        } else {
-                            binding.groupConnectedInclude.root.visibility = View.VISIBLE
-                        }
-                        discoveredHost = state.host
-                        discoveredPort = state.port
-                    }
-
-                    is SpeakersUiState.NoServer -> {
-                        binding.groupNoServerInclude.root.visibility = View.VISIBLE
-                    }
+                if (state is SpeakersUiState.Searching) {
+                    binding.groupSearchingInclude.root.visibility = View.VISIBLE
+                    binding.groupConnectedInclude.root.visibility = View.GONE
+                    binding.groupNoSpeakersInclude.root.visibility = View.GONE
+                } else if (state is SpeakersUiState.NoServer) {
+                    binding.groupNoServerInclude.root.visibility = View.VISIBLE
+                    binding.groupConnectedInclude.root.visibility = View.GONE
+                    binding.groupNoSpeakersInclude.root.visibility = View.GONE
+                } else if (state is SpeakersUiState.Connected) {
+                    discoveredHost = state.host
+                    discoveredPort = state.port
                 }
             }
         }
