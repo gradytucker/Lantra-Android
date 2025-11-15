@@ -39,5 +39,15 @@ class MainActivity : AppCompatActivity() {
         ) {
             requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
+
+        // Request notification listener permission
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE
+            )
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissionLauncher.launch(Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE)
+        }
     }
 }
