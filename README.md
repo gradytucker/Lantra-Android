@@ -12,3 +12,7 @@ network and stream audio from your device to them in real-time.
 #### Audio Streaming
 
 - Supports stereo, 44.1kHz PCM streaming over TCP.
+
+#### Player Controls
+
+- control playback of currently playing audio
