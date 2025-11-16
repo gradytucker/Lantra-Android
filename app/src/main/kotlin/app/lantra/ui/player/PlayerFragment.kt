@@ -41,16 +41,18 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
                     if (!hasInfo) {
                         binding.albumArt.setImageResource(R.drawable.default_album_art)
                         binding.titleText.text = "Nothing playing"
-                        binding.artistText.text = ""
-                        binding.albumText.text = ""
+                        binding.metaText.text = ""
                         updatePlayPauseUI(false)
                         return@collect
                     }
 
                     // Update text
                     binding.titleText.text = info.title ?: "Unknown Title"
-                    binding.artistText.text = info.artist ?: "Unknown Artist"
-                    binding.albumText.text = info.album ?: ""
+                    if (info.artist != null && info.album != null) {
+                        binding.metaText.text = "${info.artist} - ${info.album}"
+                    } else {
+                        binding.metaText.text = ""
+                    }
 
                     // Update album art
                     val art = info.albumArt
