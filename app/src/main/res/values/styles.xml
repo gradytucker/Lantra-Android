@@ -1,0 +1,8 @@
+<resources>
+
+    <style name="RoundedAlbumArt" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">16dp</item>
+    </style>
+
+</resources>

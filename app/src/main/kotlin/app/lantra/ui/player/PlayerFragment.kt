@@ -171,7 +171,7 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
 
     private fun setBlurBackground(albumArt: Bitmap?) {
         val blurImageView: ImageView = binding.blurBackground
-        val blurEffect = RenderEffect.createBlurEffect(75f, 75f, Shader.TileMode.CLAMP)
+        val blurEffect = RenderEffect.createBlurEffect(150f, 150f, Shader.TileMode.CLAMP)
 
         val tintColor = Color.parseColor("#80000000") // 50% black
         val colorFilter = BlendModeColorFilter(tintColor, BlendMode.SRC_ATOP)
