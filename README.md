@@ -14,7 +14,7 @@ network and stream audio from your device to them in real-time.
 - Supports stereo, 44.1kHz PCM streaming over TCP.
 - Supports multicasting to unlimited devices simultaneously.
 
-#### Player Controls
+#### Playback Controls
 
 - control playback of currently playing audio.
 
