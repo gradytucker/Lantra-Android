@@ -1,9 +1,16 @@
 package app.lantra.ui.player
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BlendMode
+import android.graphics.BlendModeColorFilter
+import android.graphics.Color
+import android.graphics.RenderEffect
+import android.graphics.Shader
 import android.os.SystemClock
 import android.provider.Settings
 import android.view.View
+import android.widget.ImageView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -76,8 +83,12 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
                         } else ""
 
                         val art = info.albumArt
-                        if (art != null) binding.albumArt.setImageBitmap(art)
-                        else binding.albumArt.setImageResource(R.drawable.default_album_art)
+                        if (art != null) {
+                            binding.albumArt.setImageBitmap(art)
+                            setBlurBackground(art)
+                        } else {
+                            binding.albumArt.setImageResource(R.drawable.default_album_art)
+                        }
 
                         val state = info.controller.playbackState?.state
                         updatePlayPauseUI(state == android.media.session.PlaybackState.STATE_PLAYING)
@@ -156,6 +167,20 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
         val minutes = totalSeconds / 60
         val seconds = totalSeconds % 60
         return String.format("%d:%02d", minutes, seconds)
+    }
+
+    private fun setBlurBackground(albumArt: Bitmap?) {
+        val blurImageView: ImageView = binding.blurBackground
+        val blurEffect = RenderEffect.createBlurEffect(75f, 75f, Shader.TileMode.CLAMP)
+
+        val tintColor = Color.parseColor("#80000000") // 50% black
+        val colorFilter = BlendModeColorFilter(tintColor, BlendMode.SRC_ATOP)
+        val colorFilterEffect = RenderEffect.createColorFilterEffect(colorFilter)
+
+        val combinedEffect = RenderEffect.createChainEffect(blurEffect, colorFilterEffect)
+
+        blurImageView.setRenderEffect(combinedEffect)
+        blurImageView.setImageBitmap(albumArt)
     }
 
     override fun onDestroyView() {
