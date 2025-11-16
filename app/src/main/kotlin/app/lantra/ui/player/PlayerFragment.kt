@@ -130,7 +130,6 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
         }
     }
 
-    // --- Jumping progress updater ---
     private fun startProgressUpdater() {
         progressJob?.cancel()
         progressJob = viewLifecycleOwner.lifecycleScope.launch {
@@ -140,16 +139,34 @@ class PlayerFragment : Fragment(R.layout.fragment_player) {
                     if (info != null) {
                         val state = info.controller.playbackState
                         val duration = info.duration.coerceAtLeast(1L)
+
                         val position = state?.let { playbackState ->
-                            val lastPos = playbackState.position
-                            val deltaTime =
-                                SystemClock.elapsedRealtime() - playbackState.lastPositionUpdateTime
-                            (lastPos + (deltaTime * playbackState.playbackSpeed)).toLong()
-                                .coerceAtMost(duration)
-                        } ?: info.position
-                        updateProgress(position, duration)
+                            when (playbackState.state) {
+                                android.media.session.PlaybackState.STATE_PLAYING -> {
+                                    // Update based on elapsed time
+                                    val lastPos = playbackState.position
+                                    val deltaTime =
+                                        SystemClock.elapsedRealtime() - playbackState.lastPositionUpdateTime
+                                    (lastPos + (deltaTime * playbackState.playbackSpeed)).toLong()
+                                        .coerceAtMost(duration)
+                                }
+
+                                android.media.session.PlaybackState.STATE_PAUSED,
+                                android.media.session.PlaybackState.STATE_STOPPED -> {
+                                    // Keep position constant when paused or stopped
+                                    playbackState.position.coerceAtMost(duration)
+                                }
+
+                                else -> info.position.coerceAtMost(duration)
+                            }
+                        } ?: info.position.coerceAtMost(duration)
+
+                        // Only update progress if it actually changed to reduce redraws
+                        if (binding.progressBar.progress != ((position.toDouble() / duration) * 100).toInt()) {
+                            updateProgress(position, duration)
+                        }
                     }
-                    delay(500) // jump every half second
+                    delay(500) // Update every 500ms
                 }
             }
         }
