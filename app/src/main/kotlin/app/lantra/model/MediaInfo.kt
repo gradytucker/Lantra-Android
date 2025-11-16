@@ -8,5 +8,7 @@ data class MediaInfo(
     val artist: String?,
     val album: String?,
     val albumArt: Bitmap?,
-    val controller: MediaController?
+    val controller: MediaController,
+    val duration: Long,
+    val position: Long
 )
