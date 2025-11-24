@@ -1,7 +1,11 @@
 package app.lantra.network
 
+import android.content.Context
+import android.os.Build
+import android.provider.Settings
 import android.util.Log
 import app.lantra.model.ServerMessage
+import app.lantra.model.SourceDevice
 import app.lantra.model.SpeakerDevice
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -10,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -18,6 +23,7 @@ import java.net.Socket
 import java.net.SocketException
 
 class CastControlClient(
+    private val context: Context,
     private val serverHost: String,
     private val serverPort: Int,
     private val scope: CoroutineScope
@@ -40,10 +46,10 @@ class CastControlClient(
                 writer = OutputStreamWriter(socket!!.getOutputStream())
                 Log.d("CastControlClient", "Connected")
 
-                // Listen for messages from server
+                if (socket?.isConnected == true) declareSelf()
+
                 while (socket?.isConnected == true) {
                     val line = reader?.readLine() ?: break
-                    // parse JSON into ControlMessage
                     val msg = parseMessage(line)
                     handleServerMessage(msg)
                 }
@@ -58,19 +64,17 @@ class CastControlClient(
     }
 
     private fun parseMessage(jsonString: String): ServerMessage {
-        return json.decodeFromString<ServerMessage>(jsonString);
+        return json.decodeFromString(jsonString)
     }
 
     private fun handleServerMessage(message: ServerMessage) {
         when (message.type) {
             "device_list" -> {
-                val devices = message.data.let {
-                    try {
-                        json.decodeFromJsonElement<List<SpeakerDevice>>(it)
-                    } catch (e: Exception) {
-                        Log.e("CastControlClient", "Failed to decode device list: ${e.message}")
-                        emptyList()
-                    }
+                val devices = try {
+                    json.decodeFromJsonElement<List<SpeakerDevice>>(message.data)
+                } catch (e: Exception) {
+                    Log.e("CastControlClient", "Failed to decode device list: ${e.message}")
+                    emptyList()
                 }
                 _speakers.value = devices
             }
@@ -89,6 +93,24 @@ class CastControlClient(
                 Log.e("CastControlClient", "Send failed: ${e.message}")
             }
         }
+    }
+
+    private fun getDeviceName(): String {
+        val resolver = context.contentResolver
+
+        // Primary: Bluetooth name
+        val btName = Settings.Secure.getString(resolver, "bluetooth_name")
+
+        if (!btName.isNullOrBlank()) return btName
+
+        // Fallback: Model (Pixel 7, Samsung S23, etc.)
+        return Build.MODEL ?: "Android Device"
+    }
+
+    private fun declareSelf() {
+        val deviceName = getDeviceName()
+        val sourceIdentity = SourceDevice(deviceName, "Android")
+        sendMessage(ServerMessage("source_identity", Json.encodeToJsonElement(sourceIdentity)))
     }
 
     private fun serializeMessage(msg: ServerMessage): String {

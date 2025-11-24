@@ -50,7 +50,7 @@ class SpeakersViewModel(application: Application) : AndroidViewModel(application
 
     private fun startCastControlClient(host: String, port: Int) {
         if (castControlClient != null) return
-        castControlClient = CastControlClient(host, port, viewModelScope)
+        castControlClient = CastControlClient(context, host, port, viewModelScope)
         castControlClient?.connect()
 
         viewModelScope.launch {
